@@ -76,11 +76,51 @@ export default async function handler(req, res) {
         const lastBrace = cleaned.lastIndexOf("}");
         const jsonText = firstBrace >= 0 && lastBrace > firstBrace ? cleaned.slice(firstBrace, lastBrace + 1) : cleaned;
         let guide;
-        try { guide = JSON.parse(jsonText); }
-        catch { return res.status(502).json({ error: "Cloudflare analysed the photo but returned an unreadable reuse plan.", detail: cleaned.slice(0, 700) || "The model returned an empty response." }); }
-        if (!guide.title || !guide.best_idea || !Array.isArray(guide.steps) || !guide.steps.length) {
-          return res.status(502).json({ error: "The photo analysis returned an incomplete reuse plan. Please try once more.", detail: "One or more required guide fields were missing." });
+        try { guide = JSON.parse(jsonText); } catch { guide = null; }
+
+        // Vision models sometimes return useful, readable advice instead of the requested JSON.
+        // Convert that answer into the guide shape used by the UI rather than discarding the analysis.
+        if (!guide && cleaned) {
+          const compact = cleaned.replace(/\s+/g, " ").trim();
+          const firstSentence = compact.split(/(?<=[.!?])\s+/)[0] || compact;
+          const recommendationMatch = compact.match(/(?:best idea|recommended transformation|planter|pencil holder|bird feeder)\s*[:*\-]*\s*([^.!?]{8,180})/i);
+          const recommendation = recommendationMatch?.[1]?.trim() || compact.slice(0, 260);
+          guide = {
+            title: category === "object" ? "Give this object a second life" : "Refresh this unused space",
+            what_i_see: firstSentence.slice(0, 500),
+            best_idea: compact.slice(0, 1800),
+            why_it_works: "This idea starts with what is visible in your photo and prioritises reuse over buying new materials. Check the object's condition and suitability before starting.",
+            materials: [
+              { name: "Clean reusable item", quantity: "1", reuse_tip: "Use the item shown in your photo after cleaning and checking it is safe." },
+              { name: "Basic reusable supplies", quantity: "As needed", reuse_tip: "Use materials already available at home wherever possible." }
+            ],
+            tools: ["Scissors or a suitable hand tool, only if needed", "Cleaning cloth"],
+            steps: [
+              { step: 1, title: "Clean and inspect", detail: "Wash or wipe the item, let it dry completely, and check for cracks, sharp edges or damage.", time: "10–15 minutes" },
+              { step: 2, title: "Prepare the reuse", detail: "Choose the practical reuse option described above. Only cut or modify the item if it is safe to do so; smooth or cover any cut edges.", time: "15–30 minutes" },
+              { step: 3, title: "Finish and test", detail: "Assemble using reused materials where possible. Test stability and suitability before regular use.", time: "15–30 minutes" }
+            ],
+            budget: { low: "₹0", high: "₹150", currency: "INR", saving_tips: ["Reuse materials and tools you already have.", "Avoid buying supplies until you know they are necessary."] },
+            safety: ["Clean the item before reuse.", "Do not use damaged containers for food, drinking water or heat.", "Ask an adult for help with cutting tools and cover sharp edges."],
+            alternatives: [],
+            care_and_maintenance: ["Keep the finished item clean and dry.", "Check periodically for damage and stop using it if it becomes unsafe."]
+          };
         }
+        if (!guide || typeof guide !== "object") {
+          return res.status(502).json({ error: "The photo analysis service returned no usable result.", detail: "Please try again with a clear JPG or PNG photo." });
+        }
+        guide.title ||= category === "object" ? "Give this object a second life" : "Refresh this unused space";
+        guide.what_i_see ||= "The photo was analysed. Review the suggested reuse plan before starting.";
+        guide.best_idea ||= cleaned || "Choose a practical reuse based on the visible item.";
+        guide.why_it_works ||= "It prioritises reuse and a low-cost transformation.";
+        guide.materials = Array.isArray(guide.materials) ? guide.materials : [];
+        guide.tools = Array.isArray(guide.tools) ? guide.tools : [];
+        guide.steps = Array.isArray(guide.steps) ? guide.steps : [];
+        if (!guide.steps.length) guide.steps = [{step:1,title:"Clean and inspect",detail:"Clean the item and check it is safe and suitable for the proposed reuse.",time:"10–15 minutes"}];
+        guide.budget ||= {low:"₹0",high:"₹150",currency:"INR",saving_tips:["Reuse materials already available at home."]};
+        guide.safety = Array.isArray(guide.safety) ? guide.safety : ["Check the item for damage and sharp edges before reuse."];
+        guide.alternatives = Array.isArray(guide.alternatives) ? guide.alternatives : [];
+        guide.care_and_maintenance = Array.isArray(guide.care_and_maintenance) ? guide.care_and_maintenance : [];
         return res.status(200).json({ guide, modelUsed: "@cf/meta/llama-3.2-11b-vision-instruct" });
       } catch (err) {
         const detail = err?.name === "TimeoutError" || err?.name === "AbortError"
