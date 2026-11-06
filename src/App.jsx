@@ -13,8 +13,8 @@ const photos = {
 };
 
 const features = [
-  { number: "01", icon: "↗", title: "Object Reuse", text: "See possibility in the things we already have. Give everyday discarded objects a useful, beautiful new purpose.", link: "#gallery", linkText: "Explore transformations" },
-  { number: "02", icon: "⌂", title: "Space Revival", text: "Turn overlooked corners, empty balconies and forgotten spaces into places people love to spend time in.", link: "#space-revival", linkText: "Find your fresh start" },
+  { number: "01", icon: "↗", title: "Object Reuse", text: "See possibility in the things we already have. Give everyday discarded objects a useful, beautiful new purpose.", link: "#innovation-studio", linkText: "Get a reuse guide" },
+  { number: "02", icon: "⌂", title: "Space Revival", text: "Turn overlooked corners, empty balconies and forgotten spaces into places people love to spend time in.", link: "#innovation-studio", linkText: "Revive your space" },
   { number: "03", icon: "✳", title: "Waste-to-Space", text: "Bring materials and spaces together. Discover how what gets thrown away can help create something meaningful.", link: "#how-it-works", linkText: "See how it works" }
 ];
 
@@ -35,7 +35,7 @@ function Arrow() {
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const close = () => setMenuOpen(false);
-  const links = [["Home", "#home"], ["Object Reuse", "#object-reuse"], ["Space Revival", "#space-revival"], ["Waste-to-Space", "#waste-to-space"], ["About", "#about"]];
+  const links = [["Home", "#home"], ["Object Reuse", "#object-reuse"], ["Space Revival", "#space-revival"], ["Waste-to-Space", "#waste-to-space"], ["Innovation Studio", "#innovation-studio"], ["About", "#about"]];
   return (
     <header className="site-header">
       <a className="brand" href="#home" onClick={close} aria-label="ReLife home"><LeafMark /><span>re<span className="brand-light">life</span></span></a>
@@ -94,7 +94,7 @@ function App() {
 
       <section className="space-banner" id="space-revival">
         <div className="space-banner-image"><img src={photos.garden} alt="A green outdoor space filled with plants" loading="lazy" /></div>
-        <div className="space-banner-copy"><span className="eyebrow">SPACE REVIVAL / 02</span><h2>Every empty space<br />is a <em>possibility.</em></h2><p>An unused balcony. A quiet corner. An overlooked patch of land. With thoughtful ideas and simple materials, forgotten places can become welcoming spaces again.</p><a className="button button-light" href="#gallery">See what's possible <Arrow /></a><span className="space-asterisk">✳</span></div>
+        <div className="space-banner-copy"><span className="eyebrow">SPACE REVIVAL / 02</span><h2>Every empty space<br />is a <em>possibility.</em></h2><p>An unused balcony. A quiet corner. An overlooked patch of land. With thoughtful ideas and simple materials, forgotten places can become welcoming spaces again.</p><a className="button button-light" href="#innovation-studio">Revive your space <Arrow /></a><span className="space-asterisk">✳</span></div>
       </section>
 
       <section className="gallery-section section-pad" id="gallery">
