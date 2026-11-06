@@ -101,11 +101,18 @@ export default function InnovationStudio() {
   async function apiCall(mode, image, details) {
     const {data:{session: current}} = await supabase.auth.getSession();
     if (!current) throw new Error("Your session expired. Sign in again.");
-    const response = await fetch("/api/innovate", {
-      method:"POST",
-      headers:{"Content-Type":"application/json", Authorization:"Bearer " + current.access_token},
-      body:JSON.stringify({mode, imageBase64:image.base64, mimeType:image.mimeType, description:details, category})
-    });
+    let response;
+    try {
+      response = await fetch("/api/innovate", {
+        method:"POST",
+        headers:{"Content-Type":"application/json", Authorization:"Bearer " + current.access_token},
+        body:JSON.stringify({mode, imageBase64:image.base64, mimeType:image.mimeType, description:details, category}),
+        signal: AbortSignal.timeout(55000)
+      });
+    } catch (requestError) {
+      if (requestError.name === "TimeoutError" || requestError.name === "AbortError") throw new Error("The AI request took too long. Please try again with a smaller photo.");
+      throw new Error("Could not reach the ReLife AI service. Please check your connection and try again.");
+    }
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.error || "The AI request failed.");
     return payload;
