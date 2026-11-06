@@ -140,7 +140,14 @@ export default function InnovationStudio() {
     if (!file || !guide) return;
     setError(""); setBusy("image");
     try {
-      const image = await prepareImage(file);
+      let image;
+      if (file) image = await prepareImage(file);
+      else if (originalUrl) {
+        const source = await fetch(originalUrl);
+        if (!source.ok) throw new Error("Could not reload the saved original photo. Please upload it again.");
+        const blob = await source.blob();
+        image = await prepareImage(new File([blob], "relife-original.jpg", {type:blob.type || "image/jpeg"}));
+      } else throw new Error("Upload the original photo again to generate a concept."); 
       const result = await apiCall("image", image, [description, guide.best_idea].filter(Boolean).join(". "));
       const binary = atob(result.imageBase64);
       const bytes = new Uint8Array(binary.length);
