@@ -27,9 +27,50 @@ export default async function handler(req, res) {
     const guideContents = [{ role: "user", parts: [{ text: guidePrompt }, imagePart] }];
     const imagePrompt = `Edit the uploaded real photo into a photorealistic after-transformation concept for ReLife. Preserve the same object or room identity, camera angle, proportions and fixed architecture. Apply this specific transformation: ${description || "Choose the most practical sustainable second-life transformation clearly supported by the photo"}. Category: ${category}. Make the result realistic and achievable on a modest budget using reused materials. Do not replace the subject with an unrelated object or scene. Do not add text, labels, watermarks or people. Produce one clear after image.`;
     const imageContents = [{ role: "user", parts: [{ text: imagePrompt }, imagePart] }];
-    const attempts = mode === "guide"
-      ? ["gemini-3.5-flash-lite", "gemini-3.6-flash"]
-      : ["gemini-3.1-flash-image", "gemini-3.1-flash-lite-image"];
+    if (mode === "image") {
+      const cloudflareToken = process.env.CLOUDFLARE_API_TOKEN;
+      const cloudflareAccountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+      if (!cloudflareToken || !cloudflareAccountId) {
+        return res.status(503).json({ error: "Cloudflare image generation is not configured. Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in Vercel, then redeploy." });
+      }
+      try {
+        const form = new FormData();
+        const sourceBytes = Buffer.from(imageBase64, "base64");
+        const sourceBlob = new Blob([sourceBytes], { type: mimeType });
+        form.append("prompt", imagePrompt);
+        form.append("input_image_0", sourceBlob, "relife-source." + (mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg"));
+        form.append("width", "768");
+        form.append("height", "1024");
+        const response = await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${cloudflareAccountId}/ai/run/@cf/black-forest-labs/flux-2-klein-4b`,
+          {
+            method: "POST",
+            headers: { Authorization: `Bearer ${cloudflareToken}` },
+            body: form,
+            signal: AbortSignal.timeout(45000)
+          }
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload?.success === false) {
+          const detail = payload?.errors?.map(item => item.message).filter(Boolean).join("; ");
+          return res.status(response.status || 502).json({
+            error: "Cloudflare could not generate the transformation image.",
+            detail: detail || "The image service returned an unsuccessful response."
+          });
+        }
+        const generatedImage = payload?.result?.image;
+        if (typeof generatedImage !== "string" || !generatedImage.length) {
+          return res.status(502).json({ error: "Cloudflare completed the request but did not return an image." });
+        }
+        return res.status(200).json({ imageBase64: generatedImage, mimeType: "image/png", modelUsed: "@cf/black-forest-labs/flux-2-klein-4b" });
+      } catch (err) {
+        const detail = err?.name === "TimeoutError" || err?.name === "AbortError"
+          ? "Cloudflare image generation timed out. Try a smaller photo."
+          : (err?.message || "Could not reach Cloudflare Workers AI.");
+        return res.status(502).json({ error: "The ReLife image service could not complete the request.", detail });
+      }
+    }
+    const attempts = ["gemini-3.5-flash-lite", "gemini-3.6-flash"];
     let lastError = "The AI service is temporarily unavailable.";
     for (const model of attempts) {
       let response;
@@ -38,10 +79,8 @@ export default async function handler(req, res) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            contents: mode === "guide" ? guideContents : imageContents,
-            generationConfig: mode === "guide"
-              ? { responseMimeType: "application/json", temperature: 0.25, maxOutputTokens: 1800 }
-              : { responseModalities: ["TEXT", "IMAGE"], imageConfig: { aspectRatio: "4:5", imageSize: "1K" } }
+            contents: guideContents,
+            generationConfig: { responseMimeType: "application/json", temperature: 0.25, maxOutputTokens: 1800 }
           }),
           signal: AbortSignal.timeout(18000)
         });
@@ -74,17 +113,10 @@ export default async function handler(req, res) {
           continue;
         }
       }
-      const generated = outputParts.find(p => p.inline_data?.data || p.inlineData?.data);
-      const data = generated?.inline_data || generated?.inlineData;
-      if (data?.data) {
-        return res.status(200).json({ imageBase64: data.data, mimeType: data.mime_type || data.mimeType || "image/png", modelUsed: model });
-      }
-      lastError = `${model} completed without returning an image`;
+      lastError = `${model} returned no guide content`;
     }
     return res.status(503).json({
-      error: mode === "image"
-        ? "Both image-generation models are temporarily unavailable. Please try again shortly; no unrelated placeholder image was shown."
-        : "The AI analysis services are temporarily busy. Please try again shortly.",
+      error: "The AI analysis services are temporarily busy. Please try again shortly.",
       detail: lastError
     });
   } catch (error) {
