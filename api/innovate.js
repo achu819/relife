@@ -22,29 +22,46 @@ export default async function handler(req, res) {
     if (!["image/jpeg", "image/png", "image/webp"].includes(mimeType)) return res.status(400).json({ error: "Use a JPG, PNG or WebP image." });
     const guidePrompt = `You are ReLife's practical sustainable-design assistant. Inspect the user's photo and create a safe, realistic, low-cost reuse plan. Category: ${category}. Extra context: ${description || "None supplied"}. Do not claim measurements or materials you cannot see. If uncertain, say so. Prioritize reuse, repair, locally available materials, low-cost methods, accessibility and safety. For spaces, preserve doors, windows, ventilation and circulation. For objects, identify the likely object and suggest multiple genuinely useful second-life options. Avoid structural, electrical, plumbing or load-bearing work unless a qualified professional is involved. Return ONLY valid JSON with this shape: {"title":"short project name","what_i_see":"visible facts and uncertainties","best_idea":"recommended transformation","why_it_works":"short explanation","materials":[{"name":"material","quantity":"rough quantity","reuse_tip":"how to source/reuse"}],"tools":["tool"],"steps":[{"step":1,"title":"...","detail":"...","time":"..."}],"budget":{"low":"...","high":"...","currency":"INR","saving_tips":["..."]},"safety":["..."],"alternatives":[{"title":"...","description":"..."}],"care_and_maintenance":["..."]}. Budget should be approximate Indian rupees and clearly labeled as an estimate. Keep steps specific and actionable.`;
     const imagePart = { inline_data: { mime_type: mimeType, data: imageBase64 } };
-    const model = mode === "guide" ? "gemini-2.5-flash" : "gemini-3.1-flash-image";
+    const model = "gemini-3.1-flash-image";
     const parts = mode === "guide"
       ? [{ text: guidePrompt }, imagePart]
       : [{ text: `Edit the uploaded real photo into a photorealistic after-transformation concept for ReLife. Keep the same room/object identity, camera angle, proportions and major fixed architecture. Apply this concept: ${description || "a practical, attractive sustainable reuse transformation"}. Category: ${category}. Make the result realistic, achievable on a modest budget, with reused materials and natural lighting. Do not add text, labels, watermarks, people or impossible structural changes. Produce one clear after image.` }, imagePart];
     const generationConfig = mode === "guide"
       ? { responseMimeType: "application/json", temperature: 0.35 }
       : { responseModalities: ["TEXT", "IMAGE"], imageConfig: { aspectRatio: "4:5", imageSize: "1K" } };
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig })
-    });
+    const response = mode === "guide"
+      ? await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": geminiKey, "Api-Revision": "2026-05-20" },
+          body: JSON.stringify({
+            model: "gemini-3.8-flash",
+            input: [
+              { type: "text", text: guidePrompt },
+              { type: "image", mime_type: mimeType, data: imageBase64 }
+            ],
+            response_format: { type: "text", mime_type: "application/json" },
+            generation_config: { temperature: 0.35 }
+          })
+        })
+      : await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig })
+        });
     const payload = await response.json();
     if (!response.ok) {
       const detail = payload?.error?.message || "The AI provider could not complete the request.";
       return res.status(response.status === 429 ? 429 : 502).json({ error: detail });
     }
-    const outputParts = payload?.candidates?.[0]?.content?.parts || [];
     if (mode === "guide") {
+      const outputParts = payload?.steps?.filter(step => step.type === "model_output").flatMap(step => step.content || []) || [];
       const raw = outputParts.map(p => p.text || "").join("").trim().replace(/^`{3}(?:json)?/i, "").replace(/`{3}$/,"").trim();
+      if (!raw) return res.status(502).json({ error: "The AI returned an empty guide. Please try again." });
+      
       try { return res.status(200).json({ guide: JSON.parse(raw) }); }
       catch { return res.status(502).json({ error: "The AI returned an unreadable guide. Please try again." }); }
     }
+    const outputParts = payload?.candidates?.[0]?.content?.parts || [];
     const generated = outputParts.find(p => p.inline_data?.data || p.inlineData?.data);
     const data = generated?.inline_data || generated?.inlineData;
     if (!data?.data) return res.status(502).json({ error: "The image model returned no image. Please try again." });
