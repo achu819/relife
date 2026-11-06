@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabase.js";
 
-async function prepareImage(file) {
+async function prepareImage(file, maxDimension = 1200) {
   if (!file || !["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("Choose a JPG, PNG or WebP photo.");
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1200 / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
@@ -151,7 +151,7 @@ export default function InnovationStudio() {
     setError(""); setBusy("image");
     try {
       let image;
-      if (file) image = await prepareImage(file);
+      if (file) image = await prepareImage(file, 512);
       else if (originalUrl) {
         const source = await fetch(originalUrl);
         if (!source.ok) throw new Error("Could not reload the saved original photo. Please upload it again.");
