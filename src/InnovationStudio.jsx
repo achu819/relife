@@ -114,7 +114,10 @@ export default function InnovationStudio() {
       throw new Error("Could not reach the ReLife AI service. Please check your connection and try again.");
     }
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.error || "The AI request failed.");
+    if (!response.ok) {
+      const detail = payload.detail ? `\nTechnical detail: ${payload.detail}` : "";
+      throw new Error((payload.error || "The AI request failed.") + detail);
+    }
     return payload;
   }
 
