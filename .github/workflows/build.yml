@@ -18,5 +18,7 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
+      - name: Check serverless API syntax
+        run: node --check api/innovate.js
       - name: Build website
         run: npm run build
