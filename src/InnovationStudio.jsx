@@ -151,7 +151,7 @@ export default function InnovationStudio() {
     setError(""); setBusy("image");
     try {
       let image;
-      if (file) image = await prepareImage(file, 512);
+      if (file) image = await prepareImage(file, 480);
       else if (originalUrl) {
         const source = await fetch(originalUrl);
         if (!source.ok) throw new Error("Could not reload the saved original photo. Please upload it again.");
