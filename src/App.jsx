@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import CommunityHub from "./CommunityHub.jsx";
 
 const photos = {
@@ -31,7 +31,7 @@ function Arrow() {
   return <span aria-hidden="true" className="arrow">↗</span>;
 }
 
-function Header({ onGetStarted }) {
+function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const close = () => setMenuOpen(false);
   const links = [["Home", "#home"], ["Object Reuse", "#object-reuse"], ["Space Revival", "#space-revival"], ["Waste-to-Space", "#waste-to-space"], ["About", "#about"]];
@@ -41,7 +41,7 @@ function Header({ onGetStarted }) {
       <button className="menu-toggle" aria-label="Toggle navigation" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? "✕" : "☰"}</button>
       <nav className={menuOpen ? "main-nav nav-open" : "main-nav"} aria-label="Main navigation">
         {links.map(([label, href]) => <a key={href} href={href} onClick={close}>{label}</a>)}
-        <button className="nav-cta" onClick={() => { close(); onGetStarted(); }}>Get started <Arrow /></button>
+        <a className="nav-cta" href="#community" onClick={close}>Get started <Arrow /></a>
       </nav>
     </header>
   );
@@ -66,46 +66,9 @@ function TransformationCard({ item }) {
   </article>;
 }
 
-function GetStartedModal({ onClose }) {
-  const [name, setName] = useState("");
-  const [idea, setIdea] = useState("Revive an unused space");
-  const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    const onKey = (event) => { if (event.key === "Escape") onClose(); };
-    window.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = ""; };
-  }, [onClose]);
-
-  return <div className="modal-backdrop" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-    <section className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button className="modal-close" onClick={onClose} aria-label="Close dialog">×</button>
-      {!submitted ? <>
-        <span className="eyebrow">YOUR NEXT LITTLE BIG IDEA</span>
-        <h2 id="modal-title">Let's give something a second life.</h2>
-        <p>Tell us what you'd like to explore. This demo form stays right here in your browser.</p>
-        <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }}>
-          <label htmlFor="visitor-name">What should we call you?</label>
-          <input id="visitor-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" required />
-          <label htmlFor="visitor-idea">I'm interested in...</label>
-          <select id="visitor-idea" value={idea} onChange={(e) => setIdea(e.target.value)}>
-            <option>Revive an unused space</option><option>Reuse an everyday object</option><option>Turn waste into something useful</option><option>Explore ideas for my community</option>
-          </select>
-          <button className="button button-primary form-submit" type="submit">Let's get inspired <Arrow /></button>
-        </form>
-      </> : <div className="success-state"><span className="success-icon">✳</span><span className="eyebrow">THAT'S A LOVELY PLACE TO START</span><h2 id="modal-title">Thanks, {name}!</h2><p>Your idea is: <strong>{idea.toLowerCase()}</strong>. This is a frontend demo, so nothing has been sent or saved — but your next step can start right here.</p><button className="button button-primary" onClick={onClose}>Back to ReLife <Arrow /></button></div>}
-    </section>
-  </div>;
-}
-
 function App() {
-  const [modalOpen, setModalOpen] = useState(false);
-  const openModal = () => setModalOpen(true);
-  const closeModal = () => setModalOpen(false);
-
   return <>
-    <Header onGetStarted={openModal} />
+    <Header />
     <main>
       <section className="hero" id="home">
         <div className="hero-copy">
@@ -167,10 +130,9 @@ function App() {
     </main>
 
     <footer className="site-footer">
-      <div className="footer-main"><div className="footer-brand"><a className="brand brand-footer" href="#home"><LeafMark /><span>re<span className="brand-light">life</span></span></a><p>Don't throw it away.<br /><strong>Reimagine it.</strong></p></div><div className="footer-links"><span className="eyebrow">EXPLORE</span><a href="#object-reuse">Object Reuse</a><a href="#space-revival">Space Revival</a><a href="#waste-to-space">Waste-to-Space</a><a href="#about">Our story</a></div><div className="footer-contact"><span className="eyebrow">LET'S MAKE A DIFFERENCE</span><p>Have an idea worth sharing?</p><button className="footer-contact-link" onClick={openModal}>Start a conversation <Arrow /></button><span className="contact-placeholder">Contact details can be added here.</span></div></div>
+      <div className="footer-main"><div className="footer-brand"><a className="brand brand-footer" href="#home"><LeafMark /><span>re<span className="brand-light">life</span></span></a><p>Don't throw it away.<br /><strong>Reimagine it.</strong></p></div><div className="footer-links"><span className="eyebrow">EXPLORE</span><a href="#object-reuse">Object Reuse</a><a href="#space-revival">Space Revival</a><a href="#waste-to-space">Waste-to-Space</a><a href="#about">Our story</a></div><div className="footer-contact"><span className="eyebrow">LET'S MAKE A DIFFERENCE</span><p>Have an idea worth sharing?</p><a className="footer-contact-link" href="#community">Share an idea <Arrow /></a><span className="contact-placeholder">Contact details can be added here.</span></div></div>
       <div className="footer-bottom"><span>© {new Date().getFullYear()} ReLife. Made for a more thoughtful tomorrow.</span><a href="#home">Back to top ↑</a><span className="footer-planet">ONE PLANET. MANY POSSIBILITIES. ✳</span></div>
     </footer>
-    {modalOpen && <GetStartedModal onClose={closeModal} />}
   </>;
 }
 
