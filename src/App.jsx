@@ -117,9 +117,8 @@ function App() {
       </section>
 
       <section className="impact-section">
-        <div className="impact-top"><div><span className="eyebrow">THE RIPPLE EFFECT</span><h2>Small acts add up<br />to <em>something bigger.</em></h2></div><p>Imagine what we could do when more people choose to reuse, repair and revive.</p></div>
-        <div className="impact-stats"><div className="stat"><strong>1,240<span>+</span></strong><span>Objects reimagined</span></div><div className="stat"><strong>86</strong><span>Spaces revived</span></div><div className="stat"><strong>3.2<span>t</span></strong><span>Materials given another use</span></div></div>
-        <p className="demo-note">Illustrative demo statistics — not live or verified project impact data.</p>
+        <div className="impact-top"><div><span className="eyebrow">THE RIPPLE EFFECT</span><h2>Small acts add up<br />to <em>something bigger.</em></h2></div><p>ReLife turns everyday sustainability into practical action — one object, one space and one shared resource at a time.</p></div>
+        <div className="impact-stats"><div className="stat"><strong>Reuse</strong><span>Give useful objects another purpose</span></div><div className="stat"><strong>Revive</strong><span>Make overlooked spaces useful again</span></div><div className="stat"><strong>Reconnect</strong><span>Help materials find their next use</span></div></div>
       </section>
 
       <section className="about-section section-pad" id="about">
@@ -132,7 +131,7 @@ function App() {
     </main>
 
     <footer className="site-footer">
-      <div className="footer-main"><div className="footer-brand"><a className="brand brand-footer" href="#home"><LeafMark /><span>re<span className="brand-light">life</span></span></a><p>Don't throw it away.<br /><strong>Reimagine it.</strong></p></div><div className="footer-links"><span className="eyebrow">EXPLORE</span><a href="#object-reuse">Object Reuse</a><a href="#space-revival">Space Revival</a><a href="#waste-to-space">Waste-to-Space</a><a href="#about">Our story</a></div><div className="footer-contact"><span className="eyebrow">LET'S MAKE A DIFFERENCE</span><p>Have an idea worth sharing?</p><a className="footer-contact-link" href="#community">Share an idea <Arrow /></a><span className="contact-placeholder">Contact details can be added here.</span></div></div>
+      <div className="footer-main"><div className="footer-brand"><a className="brand brand-footer" href="#home"><LeafMark /><span>re<span className="brand-light">life</span></span></a><p>Don't throw it away.<br /><strong>Reimagine it.</strong></p></div><div className="footer-links"><span className="eyebrow">EXPLORE</span><a href="#object-reuse">Object Reuse</a><a href="#space-revival">Space Revival</a><a href="#waste-to-space">Waste-to-Space</a><a href="#about">Our story</a></div><div className="footer-contact"><span className="eyebrow">LET'S MAKE A DIFFERENCE</span><p>Have an idea worth sharing?</p><a className="footer-contact-link" href="#community">Share an idea <Arrow /></a></div></div>
       <div className="footer-bottom"><span>© {new Date().getFullYear()} ReLife. Made for a more thoughtful tomorrow.</span><a href="#home">Back to top ↑</a><span className="footer-planet">ONE PLANET. MANY POSSIBILITIES. ✳</span></div>
     </footer>
   </>;
