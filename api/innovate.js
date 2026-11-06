@@ -40,11 +40,15 @@ export default async function handler(req, res) {
           signal: AbortSignal.timeout(15000)
         });
         const licensePayload = await licenseResponse.json().catch(() => ({}));
-        if (!licenseResponse.ok || licensePayload?.success === false) {
-          const detail = licensePayload?.errors?.map(item => item.message).filter(Boolean).join("; ");
+        const licenseDetail = licensePayload?.errors?.map(item => item.message).filter(Boolean).join("; ") || licensePayload?.message || "";
+        // Cloudflare may return the successful acceptance confirmation as an AiError.
+        // That exact confirmation means the agreement is already accepted; proceed to inference.
+        const agreementAccepted = /thank you for agreeing to this model'?s terms[\s\S]*you may now use the model/i.test(licenseDetail)
+          || /thank you for agreeing to this model'?s terms[\s\S]*you may now use the model/i.test(JSON.stringify(licensePayload));
+        if ((!licenseResponse.ok || licensePayload?.success === false) && !agreementAccepted) {
           return res.status(licenseResponse.status || 502).json({
-            error: "Cloudflare's photo-analysis model needs its first-time setup completed.",
-            detail: detail || "The model license agreement request was not accepted."
+            error: "Cloudflare could not complete the model's first-time license setup.",
+            detail: licenseDetail || "The model license agreement request was not accepted."
           });
         }
         const response = await fetch(endpoint, {
