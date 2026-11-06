@@ -1,5 +1,6 @@
 import { useState } from "react";
 import CommunityHub from "./CommunityHub.jsx";
+import InnovationStudio from "./InnovationStudio.jsx";
 
 const photos = {
   hero: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?auto=format&fit=crop&w=1500&q=85",
@@ -126,6 +127,7 @@ function App() {
         <div className="about-copy"><span className="eyebrow">A LITTLE ABOUT RELIFE</span><h2>We believe in<br /><em>second chances.</em></h2><p>ReLife is a sustainability initiative built around a simple belief: useful things are too valuable to be wasted, and empty spaces are too full of possibility to be ignored.</p><p>We bring together creative reuse and thoughtful space revival to inspire practical, people-friendly change — one idea at a time.</p><span className="about-signoff">A more thoughtful way forward. <span>✳</span></span></div>
         <div className="about-photo"><img src={photos.planters} alt="Healthy green plants growing in a garden" loading="lazy" /><span>GROW WITH WHAT YOU HAVE.</span></div>
       </section>
+      <InnovationStudio />
       <CommunityHub />
     </main>
 
