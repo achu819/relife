@@ -1,3 +1,5 @@
+export const config = { maxDuration: 60 };
+
 export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const supabaseUrl = process.env.VITE_SUPABASE_URL;
@@ -39,9 +41,9 @@ export default async function handler(req, res) {
               { type: "text", text: guidePrompt },
               { type: "image", mime_type: mimeType, data: imageBase64 }
             ],
-            response_format: { type: "text", mime_type: "application/json" },
-            generation_config: { temperature: 0.35 }
-          })
+            generation_config: { temperature: 0.35, max_output_tokens: 1800 }
+          }),
+          signal: AbortSignal.timeout(50000)
         })
       : await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`, {
           method: "POST",
@@ -49,6 +51,9 @@ export default async function handler(req, res) {
           body: JSON.stringify({ contents: [{ role: "user", parts }], generationConfig })
         });
     const payload = await response.json();
+    if (mode === "guide" && payload?.status && payload.status !== "completed") {
+      return res.status(502).json({ error: `Gemini interaction did not complete (status: ${payload.status}). Please try again.` });
+    }
     if (!response.ok) {
       const detail = payload?.error?.message || "The AI provider could not complete the request.";
       return res.status(response.status === 429 ? 429 : 502).json({ error: detail });
