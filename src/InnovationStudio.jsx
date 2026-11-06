@@ -75,7 +75,16 @@ export default function InnovationStudio() {
 
   async function loadProjects() {
     const {data, error: loadError} = await supabase.from("innovations").select("*").order("created_at", {ascending:false}).limit(12);
-    if (!loadError) setProjects(data || []);
+    if (!loadError) {
+      const signed = await Promise.all((data || []).map(async project => {
+        const [original, generated] = await Promise.all([
+          supabase.storage.from("relife-projects").createSignedUrl(project.original_image_path, 3600),
+          project.generated_image_path ? supabase.storage.from("relife-projects").createSignedUrl(project.generated_image_path, 3600) : Promise.resolve({data:null})
+        ]);
+        return {...project, original_image_url:original.data?.signedUrl || "", generated_image_url:generated.data?.signedUrl || ""};
+      }));
+      setProjects(signed);
+    }
   }
 
   async function authenticate(event) {
@@ -112,15 +121,15 @@ export default function InnovationStudio() {
       const image = await prepareImage(file);
       const result = await apiCall("guide", image, description);
       const path = session.user.id + "/projects/" + Date.now() + "-original.jpg";
-      const {error: uploadError} = await supabase.storage.from("relife-photos").upload(path, image.blob, {contentType:"image/jpeg", upsert:false});
+      const {error: uploadError} = await supabase.storage.from("relife-projects").upload(path, image.blob, {contentType:"image/jpeg", upsert:false});
       if (uploadError) throw new Error("Photo storage failed: " + uploadError.message);
-      const {data:publicData} = supabase.storage.from("relife-photos").getPublicUrl(path);
+      const {data:signedOriginal} = await supabase.storage.from("relife-projects").createSignedUrl(path, 3600);
       const {data:row, error:insertError} = await supabase.from("innovations").insert({
         user_id:session.user.id, category, title:result.guide.title || "My ReLife project",
-        description, original_image_url:publicData.publicUrl, guide:result.guide
+        description, original_image_path:path, guide:result.guide
       }).select().single();
       if (insertError) throw new Error("Your guide was created but could not be saved: " + insertError.message);
-      setGuide(result.guide); setOriginalUrl(publicData.publicUrl); setProjectId(row.id);
+      setGuide(result.guide); setOriginalUrl(signedOriginal?.signedUrl || ""); setProjectId(row.id);
       setNotice("Your practical reuse guide is ready and saved to My projects.");
       await loadProjects();
     } catch (e) { setError(e.message || "Could not create the guide."); }
@@ -139,18 +148,23 @@ export default function InnovationStudio() {
       const blob = new Blob([bytes], {type:result.mimeType || "image/png"});
       const ext = (result.mimeType || "image/png").includes("jpeg") ? "jpg" : "png";
       const path = session.user.id + "/projects/" + Date.now() + "-concept." + ext;
-      const {error:uploadError} = await supabase.storage.from("relife-photos").upload(path, blob, {contentType:result.mimeType || "image/png"});
+      const {error:uploadError} = await supabase.storage.from("relife-projects").upload(path, blob, {contentType:result.mimeType || "image/png"});
       if (uploadError) throw new Error("Generated image could not be saved: " + uploadError.message);
-      const {data:publicData} = supabase.storage.from("relife-photos").getPublicUrl(path);
-      const {error:updateError} = await supabase.from("innovations").update({generated_image_url:publicData.publicUrl}).eq("id",projectId);
+      const {data:signedGenerated} = await supabase.storage.from("relife-projects").createSignedUrl(path, 3600);
+      const {error:updateError} = await supabase.from("innovations").update({generated_image_path:path}).eq("id",projectId);
       if (updateError) throw new Error("Image generated but could not be attached to your project: " + updateError.message);
-      setGeneratedUrl(publicData.publicUrl); setNotice("Your after-transformation concept is generated and saved.");
+      setGeneratedUrl(signedGenerated?.signedUrl || ""); setNotice("Your after-transformation concept is generated and saved.");
       await loadProjects();
     } catch (e) { setError(e.message || "Could not generate the concept image."); }
     finally { setBusy(""); }
   }
 
   async function deleteProject(id) {
+    const project = projects.find(item => item.id === id);
+    if (project) {
+      const paths = [project.original_image_path, project.generated_image_path].filter(Boolean);
+      if (paths.length) await supabase.storage.from("relife-projects").remove(paths);
+    }
     const {error:deleteError} = await supabase.from("innovations").delete().eq("id",id);
     if (deleteError) setError(deleteError.message);
     else { setProjects(items => items.filter(p=>p.id!==id)); setNotice("Project removed."); }
