@@ -65,8 +65,9 @@ AI suggestions are ideas, not professional engineering advice. Users should veri
 
 ## 5. Storage and privacy
 
-- The `relife-photos` bucket stores community photos and private project uploads.
-- The bucket is public for image delivery; do not upload sensitive or private photos. Innovation records are protected by Row Level Security so only their owner can read or manage the records.
+- The `relife-photos` bucket stores public community listing photos.
+- The `relife-projects` bucket stores private AI project photos. Its storage policies restrict access to the owning signed-in user; the app creates short-lived signed URLs for display.
+- Innovation records are protected by Row Level Security so only their owner can read or manage them. Avoid uploading highly sensitive personal images regardless.
 - Never put a Supabase secret/service-role key or Gemini key in a `VITE_*` variable or commit secrets to GitHub.
 - The Gemini API endpoint checks the caller's Supabase access token before making an AI request.
 
