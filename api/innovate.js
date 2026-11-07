@@ -73,7 +73,7 @@ export default async function handler(req, res) {
             detail: detail || "The photo-analysis service returned an unsuccessful response."
           });
         }
-        const rawText = payload?.result?.response || payload?.result?.description || payload?.result?.output || "";
+        const rawText = payload?.result?.response ?? payload?.result?.description ?? payload?.result?.output ?? payload?.response ?? "";
         const cleaned = String(rawText).trim().replace(/^`{3}(?:json)?\s*/i, "").replace(/\s*`{3}$/i, "").trim();
         const firstBrace = cleaned.indexOf("{");
         const lastBrace = cleaned.lastIndexOf("}");
@@ -81,15 +81,32 @@ export default async function handler(req, res) {
         let guide;
         try { guide = JSON.parse(jsonText); } catch { guide = null; }
 
-        // Do not replace failed vision output with a generic plan. That caused unrelated
-        // uploads to display the same description, materials and transformation steps.
+        // Some vision responses are useful plain text rather than strict JSON.
+        // Convert the model answer into the UI schema; never substitute a canned plan.
+        if ((!guide || typeof guide !== "object" || Array.isArray(guide)) && cleaned.length > 30) {
+          const sentences = cleaned.split(/(?<=[.!?])\s+/).map(item => item.trim()).filter(item => item.length > 20);
+          const firstLine = cleaned.split(/\n/).map(item => item.trim()).find(Boolean) || "Personalised reuse idea";
+          const stepSource = sentences.slice(1, 6);
+          guide = {
+            title: firstLine.replace(/^#+\s*/, "").slice(0, 90),
+            what_i_see: sentences.slice(0, 2).join(" ").slice(0, 600) || cleaned.slice(0, 600),
+            best_idea: cleaned.slice(0, 2200),
+            why_it_works: "This recommendation is based on the vision model response to your uploaded photo. Check the item condition and suitability before starting.",
+            materials: [],
+            tools: [],
+            steps: stepSource.map((detail, index) => ({ step: index + 1, title: "Step " + (index + 1), detail, time: "As needed" })),
+            budget: { low: "Not estimated", high: "Not estimated", currency: "INR", saving_tips: [] },
+            safety: [],
+            alternatives: [],
+            care_and_maintenance: []
+          };
+        }
         if (!guide || typeof guide !== "object" || Array.isArray(guide)) {
           return res.status(502).json({
-            error: "The photo-analysis model did not return a valid personalised guide.",
-            detail: "No generic plan was substituted. Retry with a clear photo showing the whole object or space."
+            error: "The photo-analysis model returned an empty or unreadable response.",
+            detail: "The model did not provide usable text for this photo. Please retry once; if it repeats, check Cloudflare Workers AI model status and quota."
           });
         }
-
         const requiredText = ["title", "what_i_see", "best_idea", "why_it_works"];
         const missingFields = requiredText.filter(key => typeof guide[key] !== "string" || !guide[key].trim());
         if (missingFields.length || !Array.isArray(guide.steps) || guide.steps.length < 2) {
