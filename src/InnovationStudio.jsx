@@ -106,6 +106,7 @@ export default function InnovationStudio() {
       response = await fetch("/api/innovate", {
         method:"POST",
         headers:{"Content-Type":"application/json", Authorization:"Bearer " + current.access_token},
+        cache:"no-store",
         body:JSON.stringify({mode, imageBase64:image.base64, mimeType:image.mimeType, description:details, category}),
         signal: AbortSignal.timeout(55000)
       });
