@@ -268,7 +268,7 @@ h1 em, h2 em { color: var(--forest); font-weight: 500; }
 .studio-auth-switch { display:flex; gap:8px; margin-bottom:12px; }
 .studio-auth-switch button,.studio-userbar button { border:1px solid #d8dfd4; padding:9px 13px; background:transparent; color:var(--forest); cursor:pointer; font-size:11px; }
 .studio-auth-switch button.active { background:var(--forest); color:white; }
-.studio-grid { display:grid; grid-template-columns:minmax(300px,.78fr) minmax(0,1.22fr); gap:22px; align-items:start; }
+.studio-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:22px; align-items:start; }
 .studio-create,.studio-results { background:var(--cream); border:1px solid #dce3d8; padding:27px; min-width:0; }
 .studio-userbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:20px; color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
 .studio-userbar strong { color:var(--forest); }
@@ -330,3 +330,11 @@ h1 em, h2 em { color: var(--forest); font-weight: 500; }
 .history-delete { position:absolute; top:7px; right:7px; border:0; border-radius:50%; background:#fffefa; color:#7b3c30; width:27px; height:27px; font-size:19px; cursor:pointer; }
 @media(max-width:850px){.innovation-section{padding:75px 5%}.studio-grid{grid-template-columns:1fr}.studio-auth{grid-template-columns:1fr;gap:20px}.studio-history-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.innovation-section{padding:65px 6%}.studio-create,.studio-results,.studio-auth{padding:19px}.studio-before-after{grid-template-columns:1fr}.studio-before-after img{height:260px}.studio-generate{min-height:230px}.guide-columns,.guide-alternatives{grid-template-columns:1fr}.studio-history-grid{grid-template-columns:1fr 1fr}.innovation-heading h2{font-size:39px}}
+
+/* Full-width studio flow: keep the form and its longer result in one vertical column. */
+.studio-create,.studio-results { width:100%; }
+.innovation-guide { width:100%; }
+.guide-columns { align-items:start; }
+.guide-steps article>div { min-width:0; }
+.guide-steps article p,.guide-highlight p,.guide-intro p,.innovation-guide li { overflow-wrap:anywhere; }
+@media(min-width:1100px){.studio-before-after{grid-template-columns:repeat(2,minmax(0,1fr));}.studio-before-after img{height:360px;}}
