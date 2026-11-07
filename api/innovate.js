@@ -86,7 +86,7 @@ export default async function handler(req, res) {
         if ((!guide || typeof guide !== "object" || Array.isArray(guide)) && cleaned.length > 30) {
           const sentences = cleaned.split(/(?<=[.!?])\s+/).map(item => item.trim()).filter(item => item.length > 20);
           const firstLine = cleaned.split(/\n/).map(item => item.trim()).find(Boolean) || "Personalised reuse idea";
-          const stepSource = sentences.slice(1, 6);
+          const stepSource = sentences.slice(1, 6).length ? sentences.slice(1, 6) : sentences.slice(0, 1);
           guide = {
             title: firstLine.replace(/^#+\s*/, "").slice(0, 90),
             what_i_see: sentences.slice(0, 2).join(" ").slice(0, 600) || cleaned.slice(0, 600),
@@ -109,7 +109,7 @@ export default async function handler(req, res) {
         }
         const requiredText = ["title", "what_i_see", "best_idea", "why_it_works"];
         const missingFields = requiredText.filter(key => typeof guide[key] !== "string" || !guide[key].trim());
-        if (missingFields.length || !Array.isArray(guide.steps) || guide.steps.length < 2) {
+        if (missingFields.length || !Array.isArray(guide.steps) || guide.steps.length < 1) {
           return res.status(502).json({
             error: "The photo-analysis result was incomplete.",
             detail: "The model did not provide the object-specific description, recommendation and practical steps required. Retry with a clearer photo."
